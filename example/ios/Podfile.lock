@@ -15,6 +15,8 @@ PODS:
     - ExpoModulesCore
   - ExpoKeepAwake (14.0.2):
     - ExpoModulesCore
+  - ExpoLinearGradient (14.0.2):
+    - ExpoModulesCore
   - ExpoModulesCore (2.1.4):
     - DoubleConversion
     - glog
@@ -1559,6 +1561,7 @@ DEPENDENCIES:
   - ExpoFileSystem (from `../node_modules/expo-file-system/ios`)
   - ExpoFont (from `../node_modules/expo-font/ios`)
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
+  - ExpoLinearGradient (from `../node_modules/expo-linear-gradient/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
   - fmt (from `../node_modules/react-native/third-party-podspecs/fmt.podspec`)
@@ -1647,6 +1650,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-font/ios"
   ExpoKeepAwake:
     :path: "../node_modules/expo-keep-awake/ios"
+  ExpoLinearGradient:
+    :path: "../node_modules/expo-linear-gradient/ios"
   ExpoModulesCore:
     :path: "../node_modules/expo-modules-core"
   FBLazyVector:
@@ -1783,6 +1788,7 @@ SPEC CHECKSUMS:
   ExpoFileSystem: a0a5c44d3d3e8a2aa54fe7c70c7690df03cf4dd8
   ExpoFont: 8b14db1afebf62e9774613a082e402985f4e747c
   ExpoKeepAwake: 1f74cdf53ab3b3aeb7110f18eb053c92e7c3e710
+  ExpoLinearGradient: ee9efc5acb988b911320e964fab9b4cbdeb198c4
   ExpoModulesCore: 8dc3ee6a2324ab1b5e8be9ede5c4e60b948c1f7f
   FBLazyVector: be509404b5de73a64a74284edcaf73a5d1e128b1
   fmt: 10c6e61f4be25dc963c36bd73fc7b1705fe975be

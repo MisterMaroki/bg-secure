@@ -1,32 +1,66 @@
-import BgSecure from 'bg-secure';
+// import BgSecure from 'bg-secure';
 import { useEvent } from 'expo';
-import { useState } from 'react';
-import { Button, SafeAreaView, ScrollView, Text, View } from 'react-native';
-
+import { useEffect, useState } from 'react';
+import {
+	Button,
+	SafeAreaView,
+	ScrollView,
+	Text,
+	TextInput,
+	View,
+	Image,
+} from 'react-native';
+import BgSecure, { SecureOverlay } from 'bg-secure';
+// @ts-ignore
+import image from './assets/icon.png';
+import { LinearGradient } from 'expo-linear-gradient';
 export default function App() {
 	const [enabled, setEnabled] = useState(false);
+	const [inputText, setInputText] = useState('');
+
+	// /** example using the listener */
+	// useEffect(() => {
+	// 	const subscription = BgSecure.addListener('userDidTakeScreenshot');
+
+	// 	return () => {
+	// 		subscription.remove();
+	// 	};
+	// }, []);
+	console.log('🚀 ~ App ~ inputText:', inputText);
 
 	const handleEnable = () => {
 		setEnabled(true);
 		try {
-			console.log('Setting background color...');
-			BgSecure.setBackgroundColor('#000000');
 			console.log('Enabling secure mode...');
-			BgSecure.enabled(true);
+			console.log('Enabling secure view...');
+			BgSecure.enableSecureView();
 		} catch (error) {
-			console.error('Error:', error);
+			console.error('Error in handleEnable:', error);
 		}
 	};
 
 	const handleDisable = () => {
 		setEnabled(false);
-		BgSecure.enabled(false);
+		try {
+			BgSecure.disableSecureView();
+		} catch (error) {
+			console.error('Error in handleDisable:', error);
+		}
 	};
 
 	return (
 		<SafeAreaView style={styles.container}>
 			<ScrollView style={styles.container}>
 				<Text style={styles.header}>Module API Example</Text>
+				<Group name="Text Input">
+					<TextInput
+						style={styles.input}
+						value={inputText}
+						onChangeText={setInputText}
+						placeholder="Enter text here"
+					/>
+					<Text>You entered: {inputText}</Text>
+				</Group>
 				<Group name="Secure View">
 					<Text>{enabled ? 'Enabled' : 'Disabled'}</Text>
 					<Button title="Enable" onPress={handleEnable} />
@@ -42,6 +76,22 @@ export default function App() {
 					<Button title="Set value" onPress={async () => {}} />
 				</Group> */}
 			</ScrollView>
+			<SecureOverlay image={image} backgroundColor="#000">
+				<LinearGradient
+					colors={['#003D65', '#007FAD']}
+					style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+					start={{ x: 0, y: 0 }}
+					end={{ x: 0, y: 1 }}
+				>
+					{image ? (
+						<Image
+							source={image}
+							style={{ flex: 1, width: '80%' }}
+							resizeMode="contain"
+						/>
+					) : null}
+				</LinearGradient>
+			</SecureOverlay>
 		</SafeAreaView>
 	);
 }
@@ -77,5 +127,13 @@ const styles = {
 	view: {
 		flex: 1,
 		height: 200,
+	},
+	input: {
+		height: 40,
+		borderColor: 'gray',
+		borderWidth: 1,
+		borderRadius: 5,
+		padding: 10,
+		marginBottom: 10,
 	},
 };
