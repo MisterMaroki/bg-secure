@@ -1,5 +1,7 @@
 // import BgSecure from 'bg-secure';
+import BgSecure, { SecureOverlay } from 'bg-secure';
 import { useEvent } from 'expo';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import {
 	Button,
@@ -9,11 +11,12 @@ import {
 	TextInput,
 	View,
 	Image,
+	Platform,
 } from 'react-native';
-import BgSecure, { SecureOverlay } from 'bg-secure';
+
 // @ts-ignore
-import image from './assets/icon.png';
-import { LinearGradient } from 'expo-linear-gradient';
+import image from './assets/secure_screen.png';
+
 export default function App() {
 	const [enabled, setEnabled] = useState(false);
 	const [inputText, setInputText] = useState('');
@@ -32,8 +35,16 @@ export default function App() {
 		setEnabled(true);
 		try {
 			console.log('Enabling secure mode...');
-			console.log('Enabling secure view...');
-			BgSecure.enableSecureView();
+			if (Platform.OS === 'ios') {
+				const resolvedImage = Image.resolveAssetSource(image);
+				console.log('Image source:', resolvedImage);
+				// Pass the local file path
+				BgSecure.enableSecureView(
+					resolvedImage.uri.replace('file://', '')
+				);
+			} else {
+				BgSecure.enableSecureView();
+			}
 		} catch (error) {
 			console.error('Error in handleEnable:', error);
 		}
@@ -42,7 +53,6 @@ export default function App() {
 	const handleDisable = () => {
 		setEnabled(false);
 		try {
-			BgSecure.disableSecureView();
 		} catch (error) {
 			console.error('Error in handleDisable:', error);
 		}
@@ -79,7 +89,11 @@ export default function App() {
 			<SecureOverlay image={image} backgroundColor="#000">
 				<LinearGradient
 					colors={['#003D65', '#007FAD']}
-					style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+					style={{
+						flex: 1,
+						justifyContent: 'center',
+						alignItems: 'center',
+					}}
 					start={{ x: 0, y: 0 }}
 					end={{ x: 0, y: 1 }}
 				>

@@ -21,7 +21,9 @@
 		"react-native",
 		"expo",
 		"bg-secure",
-		"BgSecure"
+		"BgSecure",
+		"screenshot",
+		"secure"
 	],
 	"repository": "https://github.com/MisterMaroki/bg-secure",
 	"bugs": {

@@ -1,7 +1,6 @@
-import { NativeEventEmitter } from 'react-native';
 import { requireNativeModule } from 'expo-modules-core';
-import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { NativeEventEmitter, Platform } from 'react-native';
+
 import { BgSecureInterface } from './BgSecure.types';
 
 console.log('🔍 Initializing BgSecureModule...');
@@ -28,19 +27,16 @@ const createBgSecure = (): BgSecureInterface => {
 		console.log('📱 Creating native interface');
 		return {
 			enableSecureView(imagePath: string = '') {
-				console.log('📱 Calling native enableSecureView with:', imagePath);
+				console.log(
+					'📱 Calling native enableSecureView with:',
+					imagePath
+				);
 				if (typeof BgSecureNative.enableSecureView === 'function') {
 					BgSecureNative.enableSecureView(imagePath);
 				} else {
-					console.error('❌ Native enableSecureView method not found');
-				}
-			},
-			disableSecureView() {
-				console.log('📱 Calling native disableSecureView');
-				if (typeof BgSecureNative.disableSecureView === 'function') {
-					BgSecureNative.disableSecureView();
-				} else {
-					console.error('❌ Native disableSecureView method not found');
+					console.error(
+						'❌ Native enableSecureView method not found'
+					);
 				}
 			},
 		};
@@ -51,11 +47,8 @@ const createBgSecure = (): BgSecureInterface => {
 		enableSecureView(imagePath: string = '') {
 			console.warn(
 				'BgSecure: enableSecureView not work in web.' +
-					(!!imagePath ? ' send: ' + imagePath : '')
+					(imagePath ? ' send: ' + imagePath : '')
 			);
-		},
-		disableSecureView() {
-			console.warn('BgSecure: disableSecureView not work in web');
 		},
 	};
 };
@@ -91,15 +84,6 @@ export const addListener = (fn: FN): Return => {
 	}
 
 	return eventEmitter.addListener('onScreenshot', fn);
-};
-
-export const useSecureView = (imagePath: string = '') => {
-	useEffect(() => {
-		BgSecure.enableSecureView(imagePath);
-		return () => {
-			BgSecure.disableSecureView();
-		};
-	}, [imagePath]);
 };
 
 export { BgSecure };
