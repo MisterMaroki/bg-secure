@@ -1,6 +1,6 @@
 {
 	"name": "bg-secure",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Expo react native prevent screenshots and hide content in app switcher.",
 	"main": "build/index.js",
 	"types": "build/index.d.ts",
