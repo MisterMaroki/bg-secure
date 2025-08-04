@@ -1,35 +1,111 @@
 # bg-secure
 
-My new module
+An Expo React Native module(that works!) for securing your app's content from screenshots and app switcher previews.
+Tested on sdk 50,51,52 so far working for ios and android.
 
-# API documentation
+## Features
 
-- [Documentation for the latest stable release](https://docs.expo.dev/versions/latest/sdk/bg-secure/)
-- [Documentation for the main branch](https://docs.expo.dev/versions/unversioned/sdk/bg-secure/)
+- **Screenshot Protection**:
 
-# Installation in managed Expo projects
+    - Android: Completely blocks screenshots
+    - iOS: Allows customizing the screenshot content with a specified image
 
-For [managed](https://docs.expo.dev/archive/managed-vs-bare/) Expo projects, please follow the installation instructions in the [API documentation for the latest stable release](#api-documentation). If you follow the link and there is no documentation available then this library is not yet usable within managed projects &mdash; it is likely to be included in an upcoming Expo SDK release.
+- **App Switcher Security**:
+    - Both iOS and Android: Protects sensitive content from appearing in the app switcher
+    - Android: Uses a predefined image from the module's resources
+    - iOS: Customizable using the SecureView component
 
-# Installation in bare React Native projects
+## Installation
 
-For bare React Native projects, you must ensure that you have [installed and configured the `expo` package](https://docs.expo.dev/bare/installing-expo-modules/) before continuing.
+### For Expo Projects
 
-### Add the package to your npm dependencies
-
+```bash
+npx expo install bg-secure
 ```
+
+### For bare React Native projects
+
+```bash
 npm install bg-secure
+# or
+yarn add bg-secure
 ```
 
-### Configure for Android
+Then run:
 
+```bash
+npx pod-install
+```
 
+## Usage
 
+### Basic Setup
 
-### Configure for iOS
+```javascript
+import BgSecure, { SecureOverlay } from 'bg-secure';
+```
 
-Run `npx pod-install` after installing the npm package.
+### Enabling Secure Mode
 
-# Contributing
+```javascript
+// @ts-ignore
+import image from '@/assets/image.png';
+// For iOS - with custom screenshot image
+const handleEnable = () => {
+	if (Platform.OS === 'ios') {
+		const resolvedImage = Image.resolveAssetSource(yourImage);
+		BgSecure.enableSecureView(resolvedImage.uri.replace('file://', ''));
+	} else {
+		// For Android - blocks screenshots completely
+		BgSecure.enableSecureView();
+	}
+};
+```
 
-Contributions are very welcome! Please refer to guidelines described in the [contributing guide]( https://github.com/expo/expo#contributing).
+### Using SecureOverlay Component to customize the app switcher view (iOS only)
+
+The SecureOverlay component provides a way to customize the app switcher view:
+
+```javascript
+<SecureOverlay>
+	{/* Your secure screen content. This will show up in the app switcher for iOS */}
+	<LinearGradient
+		colors={['#003D65', '#007FAD']}
+		style={{
+			flex: 1,
+			justifyContent: 'center',
+			alignItems: 'center',
+		}}
+		start={{ x: 0, y: 0 }}
+		end={{ x: 0, y: 1 }}
+	>
+		{image ? (
+			<Image
+				source={image}
+				style={{ flex: 1, width: '80%' }}
+				resizeMode="contain"
+			/>
+		) : null}
+	</LinearGradient>
+</SecureOverlay>
+```
+
+### Platform-Specific Details
+
+#### iOS
+
+- Screenshot Protection: Allows customization of screenshot content
+- App Switcher: Uses SecureView configuration as shown in usage example
+
+#### Android
+
+- Screenshot Protection: Completely blocks screenshots
+- App Switcher: Uses predefined images from:
+  ![screenshot of files for android app switcher block view](./android-files.png)
+    - `android/src/main/res/drawable/secure_screen_gradient.xml`
+    - `android/src/main/res/drawable/secure_logo.png`
+    - `android/src/main/res/layout/secure_screen_layout.xml`
+
+## Contributing
+
+Contributions are welcome! Please refer to guidelines described in the [contributing guide](https://github.com/expo/expo#contributing).
