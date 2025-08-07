@@ -1,135 +1,242 @@
 import ExpoModulesCore
-import UIKit
 
-struct DisableScreenshot {
-    private static let textField = UITextField()
-    private static let secureView = textField.subviews.first { NSStringFromClass(type(of: $0)).contains("TextLayoutCanvasView") }
+
+
+public final class BgSecureModule: Module {
+  private var blockView = UIView()
+  private var solidView: BgSecureView?
+
+
+  private var keyWindow: UIWindow? {
+    return UIApplication.shared.connectedScenes
+      .flatMap { ($0 as? UIWindowScene)?.windows ?? [] }
+      .last { $0.isKeyWindow }
+  }
+
+  public func definition() -> ModuleDefinition {
+    Name("BgSecure")
+
+
+
+    OnCreate {
+      let boundLength = max(UIScreen.main.bounds.size.width, UIScreen.main.bounds.size.height)
+      blockView.frame = CGRect(x: 0, y: 0, width: boundLength, height: boundLength)
+      blockView.backgroundColor = .black
+    }
+
+    OnDestroy {
+      disableAppSwitcherProtection()
+    }
+
+    AsyncFunction("enableSecureView") {
+      self.preventScreenRecording()
+
+      NotificationCenter.default.addObserver(
+        self,
+        selector: #selector(self.preventScreenRecording),
+        name: UIScreen.capturedDidChangeNotification,
+        object: nil
+      )
+    }.runOnQueue(.main)
+
+    AsyncFunction("disableSecureView") {
+      NotificationCenter.default.removeObserver(
+        self,
+        name: UIScreen.capturedDidChangeNotification,
+        object: nil
+      )
+    }.runOnQueue(.main)
+
+    AsyncFunction("enableAppSwitcherProtection") {
+      enableAppSwitcherProtection()
+    }.runOnQueue(.main)
+
+    AsyncFunction("disableAppSwitcherProtection") {
+      disableAppSwitcherProtection()
+    }.runOnQueue(.main)
+
+    AsyncFunction("forceRemovePrivacyOverlay") {
+      removePrivacyOverlay()
+    }.runOnQueue(.main)
+
+
+  }
+
+
+
+  @objc
+  func preventScreenRecording() {
+    guard let keyWindow = keyWindow,
+          let visibleView = keyWindow.subviews.first else { return }
+    let isCaptured = UIScreen.main.isCaptured
+
+    if isCaptured {
+      visibleView.addSubview(blockView)
+    } else {
+      blockView.removeFromSuperview()
+    }
+  }
+
+
+
+  private func enableAppSwitcherProtection() {
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(appWillResignActive),
+      name: UIApplication.willResignActiveNotification,
+      object: nil
+    )
+
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(appDidBecomeActive),
+      name: UIApplication.didBecomeActiveNotification,
+      object: nil
+    )
     
-    static func setupSecureTextField(with imagePath: String?) {
-        DispatchQueue.main.async {
-            guard let window = UIApplication.shared.windows.first else { return }
-            let rootView = window
+    // Also listen for app entering foreground (handles lock/unlock scenarios)
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(appWillEnterForeground),
+      name: UIApplication.willEnterForegroundNotification,
+      object: nil
+    )
+  }
+
+  private func disableAppSwitcherProtection() {
+    NotificationCenter.default.removeObserver(
+      self,
+      name: UIApplication.willResignActiveNotification,
+      object: nil
+    )
+
+    NotificationCenter.default.removeObserver(
+      self,
+      name: UIApplication.didBecomeActiveNotification,
+      object: nil
+    )
+    
+    NotificationCenter.default.removeObserver(
+      self,
+      name: UIApplication.willEnterForegroundNotification,
+      object: nil
+    )
+
+    removePrivacyOverlay()
+  }
+
+  @objc
+  private func appWillResignActive() {
+    showPrivacyOverlay()
+  }
+
+  @objc
+  private func appDidBecomeActive() {
+    removePrivacyOverlay()
+  }
+  
+  @objc
+  private func appWillEnterForeground() {
+    // Additional cleanup when app enters foreground (handles lock/unlock)
+    removePrivacyOverlay()
+  }
+
+  private func showPrivacyOverlay() {
+    // Don't create multiple overlays
+    guard self.solidView == nil else {
+      return
+    }
+    
+    if let keyWindow = keyWindow,
+       let rootView = keyWindow.subviews.first {
+      let solidView = BgSecureView()
+      solidView.frame = rootView.bounds
+      solidView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+      solidView.alpha = 0
+
+      rootView.addSubview(solidView)
+      self.solidView = solidView
+
+      UIView.animate(
+        withDuration: 0.3,
+        delay: 0,
+        options: [.curveEaseOut],
+        animations: {
+          solidView.alpha = 1.0
+        }
+      )
+    }
+  }
+
+  private func removePrivacyOverlay() {
+    guard let solidView = self.solidView else {
+      return
+    }
+    
+    // Cancel any ongoing animations to prevent conflicts
+    solidView.layer.removeAllAnimations()
+    
+    UIView.animate(
+      withDuration: 0.25,
+      delay: 0,
+      options: [.curveEaseIn, .beginFromCurrentState],
+      animations: {
+        solidView.alpha = 0
+      },
+      completion: { _ in
+        solidView.removeFromSuperview()
+        self.solidView = nil
+      }
+    )
+  }
+}
+
+// Advanced screenshot protection utilities adapted for component-level protection
+struct ComponentScreenshotProtection {
+    static func enableProtection(for view: UIView) -> UITextField? {
+        let secureTextField = UITextField()
+        secureTextField.frame = view.bounds
+        secureTextField.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        secureTextField.isSecureTextEntry = true
+        secureTextField.isUserInteractionEnabled = false
+        secureTextField.backgroundColor = UIColor.black
+        
+        // This is the critical part - we need to manipulate the layer hierarchy
+        // exactly as in the working code
+        
+        // Add secure field to the view's parent (not the view itself)
+        if let parentView = view.superview {
+            parentView.addSubview(secureTextField)
+            parentView.sendSubviewToBack(secureTextField)
             
-            // Configure text field
-            textField.frame = rootView.frame
-            textField.isSecureTextEntry = true
-            textField.isUserInteractionEnabled = false
-            
-            if let imagePath = imagePath, !imagePath.isEmpty {
-                print("🛡️ [BGSecure] Attempting to load image from path:", imagePath)
-                
-                // Get the module bundle
-                let bundle = Bundle(for: BgSecureModule.self)
-                
-                // Try different ways to load the image
-                let image: UIImage? = {
-                    // First try loading from assets
-                    if let image = UIImage(named: imagePath, in: bundle, compatibleWith: nil) {
-                        print("🛡️ [BGSecure] Loaded image from bundle assets")
-                        return image
-                    }
-                    
-                    // Then try loading from file path
-                    if let image = UIImage(contentsOfFile: imagePath) {
-                        print("🛡️ [BGSecure] Loaded image from file path")
-                        return image
-                    }
-                    
-                    // Finally try loading from URL
-                    if let url = URL(string: imagePath),
-                       let data = try? Data(contentsOf: url),
-                       let image = UIImage(data: data) {
-                        print("🛡️ [BGSecure] Loaded image from URL")
-                        return image
-                    }
-                    
-                    print("🛡️ [BGSecure] Failed to load image from all methods")
-                    return nil
-                }()
-                
-                if let image = image {
-                    let screenSize = rootView.frame.size
-                    
-                    // Create a renderer with the screen size
-                    let renderer = UIGraphicsImageRenderer(size: screenSize)
-                    let scaledImage = renderer.image { context in
-                        // Fill background with clear color
-                        UIColor.clear.setFill()
-                        context.fill(CGRect(origin: .zero, size: screenSize))
-                        
-                        // Calculate aspect ratio scaling
-                        let imageSize = image.size
-                        let widthRatio = screenSize.width / imageSize.width
-                        let heightRatio = screenSize.height / imageSize.height
-                        
-                        // Use the smaller ratio to ensure image fits within screen
-                        let scale = min(widthRatio, heightRatio) * 0.8 // 80% of the fitting size for padding
-                        let scaledWidth = imageSize.width * scale
-                        let scaledHeight = imageSize.height * scale
-                        
-                        // Calculate center position
-                        let x = (screenSize.width - scaledWidth) / 2
-                        let y = (screenSize.height - scaledHeight) / 2
-                        
-                        // Draw image centered
-                        image.draw(in: CGRect(x: x, y: y, width: scaledWidth, height: scaledHeight))
-                    }
-                    
-                    textField.backgroundColor = UIColor(patternImage: scaledImage)
-                    print("🛡️ [BGSecure] Successfully set image as background")
+            // Critical layer manipulation
+            if let superlayer = view.layer.superlayer {
+                superlayer.addSublayer(secureTextField.layer)
+                if let secureSublayer = secureTextField.layer.sublayers?.last {
+                    view.layer.removeFromSuperlayer()
+                    secureSublayer.addSublayer(view.layer)
                 }
             }
-            
-            rootView.sendSubviewToBack(textField)
-            rootView.addSubview(textField)
-            rootView.layer.superlayer?.addSublayer(textField.layer)
-            textField.layer.sublayers?.last?.addSublayer(rootView.layer)
-            
-            print("🛡️ [BGSecure] Screenshot protection enabled")
         }
-    }
-
-    static func disableScreenshots(layer: CALayer) {
-        guard let secureView = Self.secureView else { return }
-
-        let previousLayer = secureView.layer
-        secureView.setValue(layer, forKey: "layer")
-        Self.textField.isSecureTextEntry = true
-        Self.textField.isUserInteractionEnabled = false
-        secureView.setValue(previousLayer, forKey: "layer")
-    }
-}
-
-extension CALayer {
-    func disableScreenshots() {
-        DisableScreenshot.disableScreenshots(layer: self)
-    }
-}
-
-public class BgSecureModule: Module {
-    public func definition() -> ModuleDefinition {
-        Name("BgSecure")
         
-        Function("enableSecureView") { (imagePath: String?) in
-            DisableScreenshot.setupSecureTextField(with: imagePath)
-        }
-            
-        // Events
-        Events("onScreenshot")
-        
-        OnCreate {
-            NotificationCenter.default.addObserver(
-                self,
-                selector: #selector(self.handleScreenshot),
-                name: UIApplication.userDidTakeScreenshotNotification,
-                object: nil
-            )
-        }
+        print("🛡️ [BGSecure] Component-level screenshot protection enabled")
+        return secureTextField
     }
     
-    @objc private func handleScreenshot() {
-        print("📸 [BGSecure] Screenshot detected!")
-        sendEvent("onScreenshot", [:])
+    static func disableProtection(textField: UITextField, originalView: UIView, originalSuperlayer: CALayer?) {
+        // Restore the original layer hierarchy
+        originalView.layer.removeFromSuperlayer()
+        
+        if let originalSuperlayer = originalSuperlayer {
+            originalSuperlayer.addSublayer(originalView.layer)
+        }
+        
+        // Remove the secure text field
+        textField.removeFromSuperview()
+        
+        print("🛡️ [BGSecure] Component-level screenshot protection disabled")
     }
 }
+
+// Secure wrapper view for protecting specific React components
 
